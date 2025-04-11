@@ -31,6 +31,6 @@ services:
       - my-network
 networks:
   my-network:
-    driver: bridge
+    external: true
 volumes:
   esdata:

@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 @Slf4j
 @Service
@@ -23,14 +24,16 @@ public class KafkaService {
 			groupId = "search-group",
 			clientIdPrefix = "users-consumer"
 	)
-	public void consumeUsers(ConsumerRecord<String, String> record) {
+	public Mono<Void> consumeUsers(ConsumerRecord<String, String> record) {
+		UsersDto dto;
 		try {
-			UsersDto dto = objectMapper.readValue(record.value(), UsersDto.class);
-			searchService.saveUsersData(dto);
+			dto = objectMapper.readValue(record.value(), UsersDto.class);
 		} catch (Exception e) {
 			log.error("사용자 검색 데이터 파싱 오류 : {}", record.value());
 			log.error("에러 스택 : {}" , e.getMessage());
+			throw new RuntimeException("카프카 파싱 오류");
 		}
+		return searchService.saveUsersData(dto);
 	}
 
 	@KafkaListener(
@@ -38,14 +41,16 @@ public class KafkaService {
 			groupId = "search-group",
 			clientIdPrefix = "post-consumer"
 	)
-	public void consumePost(ConsumerRecord<String, String> record) {
+	public Mono<Void> consumePost(ConsumerRecord<String, String> record) {
+		PostDto dto;
 		try {
-			PostDto dto = objectMapper.readValue(record.value(), PostDto.class);
-			searchService.savePostData(dto);
+			dto = objectMapper.readValue(record.value(), PostDto.class);
 		} catch (Exception e) {
 			log.error("게시글 검색 데이터 파싱 오류 : {}", record.value());
 			log.error("에러 스택 : {}" , e.getMessage());
+			throw new RuntimeException("카프카 파싱 오류");
 		}
+		return searchService.savePostData(dto);
 	}
 
 	@KafkaListener(
@@ -53,14 +58,16 @@ public class KafkaService {
 			groupId = "search-group",
 			clientIdPrefix = "group-consumer"
 	)
-	public void consumeGroup(ConsumerRecord<String, String> record) {
+	public Mono<Void> consumeGroup(ConsumerRecord<String, String> record) {
+		GroupDto dto;
 		try {
-			GroupDto dto = objectMapper.readValue(record.value(), GroupDto.class);
-			searchService.saveGroupData(dto);
+			dto = objectMapper.readValue(record.value(), GroupDto.class);
 		} catch (Exception e) {
 			log.error("그룹 검색 데이터 파싱 오류 : {}", record.value());
 			log.error("에러 스택 : {}" , e.getMessage());
+			throw new RuntimeException("카프카 파싱 오류");
 		}
+		return searchService.saveGroupData(dto);
 	}
 
 }

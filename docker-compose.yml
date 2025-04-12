@@ -1,8 +1,8 @@
-version: '3.8'
 services:
-  users-service:
+  search-service:
     container_name: sapp
     image: search-service:latest
+    restart: on-failure
     build:
       context: .
       dockerfile: Dockerfile
@@ -12,12 +12,14 @@ services:
       - CONFIG_SERVER_URL=http://172.17.0.1:8888
       - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
     depends_on:
-      - elasticsearch
+      elasticsearch:
+        condition: service_healthy
     networks:
       - my-network
   elasticsearch:
     container_name: esearch
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.1
+    restart: on-failure
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
@@ -27,6 +29,11 @@ services:
       - "9200:9200"
     volumes:
       - esdata:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - my-network
 networks:

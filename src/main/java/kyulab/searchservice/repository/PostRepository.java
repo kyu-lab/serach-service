@@ -1,14 +1,13 @@
 package kyulab.searchservice.repository;
 
 import kyulab.searchservice.document.PostsDocument;
-import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
+import org.springframework.data.elasticsearch.repository.ReactiveElasticsearchRepository;
 import org.springframework.stereotype.Repository;
-
-import java.util.List;
+import reactor.core.publisher.Flux;
 
 @Repository
-public interface PostRepository extends ElasticsearchRepository<PostsDocument, String> {
+public interface PostRepository extends ReactiveElasticsearchRepository<PostsDocument, String> {
 
-	List<PostsDocument> findBySubjectContaining(String query);
+	Flux<PostsDocument> findBySubjectContaining(String query);
 
 }

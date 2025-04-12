@@ -16,6 +16,7 @@ import kyulab.searchservice.repository.UsersRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -31,63 +32,44 @@ public class SearchService {
 	private final GroupRepository groupRepository;
 
 	public Mono<SearchResDto> search(String query) {
-		Mono<List<UsersResDto>> users = searchUsers(query);
-		Mono<List<PostResDto>> posts = searchPosts(query);
-		Mono<List<GroupResDto>> group = searchGroup(query);
-
-		return Mono.zip(users, posts, group)
-				.map(zip -> new SearchResDto(zip.getT1(), zip.getT2(), zip.getT3()));
+		return Mono.zip(
+				usersRepository.findByNameContaining(query).map(UsersResDto::from).collectList(),
+				postRepository.findBySubjectContaining(query).map(PostResDto::from).collectList(),
+				groupRepository.findByNameContaining(query).map(GroupResDto::from).collectList()
+		).map(zip -> new SearchResDto(zip.getT1(), zip.getT2(), zip.getT3()));
 	}
 
-	public Mono<List<UsersResDto>> searchUsers(String query) {
-		return Mono.fromCallable(() ->
-				usersRepository.findByNameContaining(query).stream()
-						.map(UsersResDto::from)
-						.toList()
-		).subscribeOn(Schedulers.boundedElastic());
+	public Flux<UsersResDto> searchUsers(String query) {
+		return usersRepository.findByNameContaining(query)
+				.map(UsersResDto::from);
 	}
 
-	public Mono<List<PostResDto>> searchPosts(String query) {
-		return Mono.fromCallable(() ->
-				postRepository.findBySubjectContaining(query).stream()
-						.map(PostResDto::from)
-						.toList()
-		).subscribeOn(Schedulers.boundedElastic());
+	public Flux<PostResDto> searchPosts(String query) {
+		return postRepository.findBySubjectContaining(query)
+				.map(PostResDto::from);
 	}
 
-	public Mono<List<GroupResDto>> searchGroup(String query) {
-		return Mono.fromCallable(() ->
-				groupRepository.findByNameContaining(query).stream()
-						.map(GroupResDto::from)
-						.toList()
-		).subscribeOn(Schedulers.boundedElastic());
+	public Flux<GroupResDto> searchGroup(String query) {
+		return groupRepository.findByNameContaining(query)
+				.map(GroupResDto::from);
 	}
 
-	public void saveUsersData(UsersDto usersDto) {
-		UsersDocument usersDocument = new UsersDocument(usersDto);
-		try {
-			usersRepository.save(usersDocument);
-		} catch (Exception e) {
-			log.error("사용자 데이터 저장 실패 : {}", e.getMessage());
-		}
+	public Mono<Void> saveUsersData(UsersDto usersDto) {
+		return usersRepository.save(new UsersDocument(usersDto))
+				.doOnError(e -> log.error("사용자 데이터 저장 실패: {}", e.getMessage()))
+				.then();
 	}
 
-	public void savePostData(PostDto postDto) {
-		PostsDocument postsDocument = new PostsDocument(postDto);
-		try {
-			postRepository.save(postsDocument);
-		} catch (Exception e) {
-			log.error("게시글 데이터 저장 실패 : {}", e.getMessage());
-		}
+	public Mono<Void> savePostData(PostDto postDto) {
+		return postRepository.save(new PostsDocument(postDto))
+				.doOnError(e -> log.error("게시글 데이터 저장 실패: {}", e.getMessage()))
+				.then();
 	}
 
-	public void saveGroupData(GroupDto groupDto) {
-		GroupDocument groupDocument = new GroupDocument(groupDto);
-		try {
-			groupRepository.save(groupDocument);
-		} catch (Exception e) {
-			log.error("그룹 데이터 저장 실패 : {}", e.getMessage());
-		}
+	public Mono<Void> saveGroupData(GroupDto groupDto) {
+		return groupRepository.save(new GroupDocument(groupDto))
+				.doOnError(e -> log.error("그룹 데이터 저장 실패: {}", e.getMessage()))
+				.then();
 	}
 
 }

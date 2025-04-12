@@ -1,14 +1,13 @@
 package kyulab.searchservice.repository;
 
 import kyulab.searchservice.document.GroupDocument;
-import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
+import org.springframework.data.elasticsearch.repository.ReactiveElasticsearchRepository;
 import org.springframework.stereotype.Repository;
-
-import java.util.List;
+import reactor.core.publisher.Flux;
 
 @Repository
-public interface GroupRepository extends ElasticsearchRepository<GroupDocument, String> {
+public interface GroupRepository extends ReactiveElasticsearchRepository<GroupDocument, String> {
 
-	List<GroupDocument> findByNameContaining(String query);
+	Flux<GroupDocument> findByNameContaining(String query);
 
 }
